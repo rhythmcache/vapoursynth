@@ -1,5 +1,5 @@
 project('vapoursynth', ['c', 'cpp'],
-    version: run_command('python', '-c', 
+    version: run_command(find_program('python3', 'python'), '-c', 
     'import re; print(re.search(r"#define VS_CURRENT_RELEASE (\\d+)", open("VAPOURSYNTH_VERSION").read()).group(1))', 
     check: true).stdout().strip(),
   license : 'LGPL-2.1+',
