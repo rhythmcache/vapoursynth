@@ -1,5 +1,5 @@
 project('vapoursynth', ['c', 'cpp'],
-    version: run_command('python3', '-c', 
+    version: run_command('python', '-c', 
     'import re; print(re.search(r"#define VS_CURRENT_RELEASE (\\d+)", open("VAPOURSYNTH_VERSION").read()).group(1))', 
     check: true).stdout().strip(),
   license : 'LGPL-2.1+',
@@ -51,14 +51,9 @@ stackrealign_flags = []
 python_module_undefined = []
 maybe_python3_libs = []
 
-if host_system == 'darwin'
-  add_project_arguments('-DVS_TARGET_OS_DARWIN', language: ['c', 'cpp'])
-  undefined_ldflags = ['-Wl,-undefined,error']
-  python_module_undefined = ['-undefined', 'dynamic_lookup']
-elif host_system in ['linux', 'freebsd', 'openbsd', 'netbsd', 'dragonfly']
-  add_project_arguments('-DVS_TARGET_OS_LINUX', language: ['c', 'cpp'])
-  undefined_ldflags = ['-Wl,--no-undefined']
-elif host_system == 'windows'
+is_mingw = cc.get_id() == 'gcc' and cc.get_define('__MINGW32__') != ''
+
+if host_system == 'windows' or is_mingw
   add_project_arguments('-DVS_TARGET_OS_WINDOWS', language: ['c', 'cpp'])
   unicode_cflags = ['-DUNICODE', '-D_UNICODE']
   unicode_ldflags = ['-municode']
@@ -67,9 +62,17 @@ elif host_system == 'windows'
     stackrealign_flags = ['-mstackrealign']
   endif
   python_module_undefined = ['-no-undefined']
+elif host_system == 'darwin'
+  add_project_arguments('-DVS_TARGET_OS_DARWIN', language: ['c', 'cpp'])
+  undefined_ldflags = ['-Wl,-undefined,error']
+  python_module_undefined = ['-undefined', 'dynamic_lookup']
+elif host_system in ['linux', 'freebsd', 'openbsd', 'netbsd', 'dragonfly']
+  add_project_arguments('-DVS_TARGET_OS_LINUX', language: ['c', 'cpp'])
+  undefined_ldflags = ['-Wl,--no-undefined']
 else
   error('Unknown host OS: ' + host_system)
 endif
+
 
 if x86
   add_project_arguments('-DVS_TARGET_CPU_X86', language: ['c', 'cpp'])
@@ -161,7 +164,7 @@ dlopen_lib = []
 if host_system != 'windows'
   dlopen_lib = cc.find_library('dl', required: false)
   if not dlopen_lib.found()
-    dlopen_lib = cc.find_library('dld', required: true)
+    dlopen_lib = cc.find_library('dld', required: false)
   endif
 endif
 
